@@ -1,0 +1,166 @@
+---
+title: Getting started with plugin 
+description: Learn how to create an Erxes plugin from scratch
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock';
+import { File, Folder, Files } from 'fumadocs-ui/components/files';
+
+
+# Create a new plugin
+
+<Steps>
+  <Step title="Create a new plugin">
+    ### Create a new plugin
+    ```bash
+    pnpm create-plugin
+    ```
+  </Step>
+  <Step title="Write the plugin name ">
+    ### Write the plugin name
+
+    ![Test](/create-plugin.png)
+
+  </Step>
+
+  <Step title="Write the plugin module">
+    ### Write the plugin module
+    ![Test](/create-plugin-module.png)
+ 
+  </Step>
+  
+</Steps>
+
+# Start plugin
+
+
+<Steps>
+  <Step title="Start the plugin">
+    ### Configure environment variable
+
+    <DynamicCodeBlock lang="bash" code="# Database connection
+      MONGO_URL=mongodb://localhost:27017/erxes?directConnection=true
+      
+      # Node.js configuration
+      NODE_OPTIONS=--max-old-space-size=1536
+      NODE_ENV=development
+      
+      # Plugin configuration (optional) (if you want to enable a plugin)
+      ENABLED_PLUGINS=yourpluginname,otherpluginname" />
+    ```bash
+    nano .env
+    ```
+    
+    ```bash
+    ENABLED_PLUGINS=yourpluginname,otherpluginname
+    ```
+  </Step>
+
+  <Step title="Start the plugin">
+    ### Start the plugin
+    <Callout title="Important" type="warning">
+      If erxes is running, you need to stop it.
+    </Callout>
+
+    If you have configured the plugin correctly in your .env file, you need to start erxes
+
+    [local setup guide](./local-setup#start-erxes).
+  </Step>
+</Steps>
+
+# Use the plugin
+
+<Callout title="Important" type="warning">
+  create-plugin command will create plugins same ports, if you want more plugin you can configure the ports in plugins api main.ts
+</Callout>
+
+### Frontend 
+
+Your plugin will be located at /frontend/plugins/yourpluginname_ui
+
+<Files>
+  <Folder name="erxes-next" defaultOpen>
+    <Folder name="frontend" defaultOpen>
+      <Folder name="core-ui" defaultOpen/>
+      <Folder name="libs" defaultOpen>
+      <Folder name="erxes-ui" defaultOpen/>     
+      <Folder name="ui-modules" defaultOpen/>
+      </Folder>
+
+      <Folder name="plugins" defaultOpen>
+        <Folder name="yourpluginname_ui" defaultOpen>
+          <Folder name="src"  defaultOpen>
+          <Folder name="modules">
+            <File name="Main.tsx" />
+            <File name="Settings.tsx" />
+          </Folder>
+        
+          <Folder name="pages">
+            <File name="IndexPage.tsx" />
+          </Folder>
+          <Folder name="widgets">
+            <File name="Widgets.tsx" />
+          </Folder>
+          <File name="main.ts" />
+          <File name="bootstrap.tsx" />
+          <File name="index.html" />
+          <File name="config.ts" />
+          </Folder>
+          <File name="eslint.config.js" />
+          <File name="jest.config.ts" />
+          <File name="module-federation.config.json" />
+          <File name="project.json" />
+          <File name="rspack.config.prod.json" />
+          <File name="rspack.config.json" />
+          <File name="tsconfig.json" />
+          <File name="tsconfig.app.json" />
+          <File name="tsconfig.spec.json" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
+
+
+### Backend
+
+<Files>
+  <Folder name="erxes-next" defaultOpen>
+    <Folder name="backend" defaultOpen>
+      <Folder name="core-api" defaultOpen/>
+      <Folder name="erxes-api-shared" defaultOpen>
+      <Folder name="gateway" defaultOpen/>     
+      </Folder>
+
+      <Folder name="plugins" defaultOpen>
+        <Folder name="yourpluginname_api" defaultOpen>
+          <Folder name="src"  defaultOpen>
+          <Folder name="apollo"/>
+          
+          <Folder name="modules">
+            <File name="Main.tsx" />
+            <File name="Settings.tsx" />
+          </Folder>
+          <Folder name="trpc" />
+        
+          <File name="main.ts" />
+          <File name="connectionResolvers.ts" />
+
+          </Folder>
+          <File name=".gitignore" />
+          <File name="package.json" />
+          <File name="tsconfig.json" />
+          <File name="tsconfig.build.json" />
+          <File name="project.json" />
+        </Folder>
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
+
+Your plugin will be located at /backend/plugins/yourpluginname_api
+
+

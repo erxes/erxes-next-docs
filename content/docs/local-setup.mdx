@@ -1,0 +1,203 @@
+---
+title: Local Setup
+description: Learn how to set up Erxes on your local machine
+---
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { DynamicCodeBlock } from 'fumadocs-ui/components/dynamic-codeblock';
+
+
+# Prerequisites
+
+Before you can install and use Erxes, make sure you install the following on your computer:
+
+* [Git](https://git-scm.com/downloads)
+* [Node.js v20 or higher](https://nodejs.org/en/download/)
+* [pnpm](https://pnpm.io/installation)
+* [nx](https://nx.dev/getting-started/installation)
+* [nvm](https://github.com/nvm-sh/nvm)
+
+# Prepare the environment
+
+<Steps>
+  <Step title="Create a folder for erxes">
+    ### Create a folder for erxes
+    ```bash
+    cd erxes
+    ```
+  </Step>
+</Steps>  
+
+<Callout title="Important" type="warning">
+  Make sure you are inside the erxes folder before proceeding with the installation steps. Being in the correct directory is crucial for the setup process to work properly.
+</Callout>
+
+# Setup Database
+
+<Tabs items={['Local Installation', 'Docker']}>
+  <Tab value="Local Installation">
+    <Steps>
+      <Step title="Install MongoDB">
+        ### Install MongoDB
+        ```bash
+        docker run -d --name erxes-mongodb -p 27017:27017 mongo:latest
+        ```
+      </Step>
+      <Step title="Install Redis">
+        ### Install Redis
+        ```bash
+        docker run -d --name erxes-redis -p 6379:6379 redis:latest
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab value="Docker">
+    <Steps>
+      <Step title="Install Docker">
+        ### Install Docker
+        First, you need to install Docker on your system. Follow the official installation guide for your operating system:
+        [Install Docker](https://docs.docker.com/engine/install/)
+      </Step>
+      <Step title="Install Docker Compose">
+        ### Install Docker Compose
+        Docker Compose is required to run multiple containers. Install it following the official guide:
+        [Install Docker Compose](https://docs.docker.com/compose/install/)
+      </Step>
+      <Step title="Setup Docker Environment">
+        ### Create Docker Environment
+        Create a new directory for Docker configuration and navigate to it:
+        ```bash
+        mkdir docker
+        cd docker
+        ```
+      </Step>
+      <Step title="Create docker-compose.yml">
+        ### Create docker-compose.yml
+        Create a new file named `docker-compose.yml` with the following configuration:
+        ```yaml
+        version: '3.6'
+        services:
+          mongo:
+            hostname: mongo
+            image: mongo:4.0.10
+            ports:
+              - "27017:27017"
+            networks:
+              - erxes-net
+            command: ["--replSet", "rs0", "--bind_ip_all"]
+            volumes:
+              - ./data/db:/data/db
+
+          redis:
+            image: 'redis'
+            ports:
+              - "6379:6379"
+            networks:
+              - erxes-net
+
+        networks:
+          erxes-net:
+            driver: bridge
+        ```
+      </Step>
+      <Step title="Start Docker Services">
+        ### Start Docker Services
+        Run the following command to start all services in detached mode:
+        ```bash
+        docker-compose up -d
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+# Setup Erxes
+
+<Steps>
+  <Step title="Clone the repository">
+    ### Clone the repository
+    <Tabs items={['SSH (recommended)', 'HTTPS']}>
+      <Tab value="SSH (recommended)">
+        ```bash
+        git clone git@github.com:erxes/erxes-next.git
+        ```
+      </Tab>
+      <Tab value="HTTPS">
+        ```bash
+        git clone https://github.com/erxes/erxes-next.git
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Copy the environment variables">
+    ### Copy the environment variables
+    ```bash
+    cp .env.example .env
+    ```
+  </Step> 
+
+    <Step title="Configure the environment variables">
+    ### Configure the environment variables
+    <DynamicCodeBlock lang="bash" code="# Database connection
+      MONGO_URL=mongodb://localhost:27017/erxes?directConnection=true
+      REDIS_URL=redis://localhost:6379
+      
+      # Node.js configuration
+      NODE_OPTIONS=--max-old-space-size=1536
+      NODE_ENV=development
+      
+      # Plugin configuration (optional) (if you want to enable a plugin)
+      ENABLED_PLUGINS=yourpluginname" />
+
+      <Callout title="Important" type="warning">
+        If You are not using plugins, you can remove the ENABLED_PLUGINS line. If ENABLED_PLUGINS is null value it might break the setup process.
+      </Callout>
+  </Step>
+
+  <Step title="Install dependencies">
+    ### Install dependencies
+    ```bash
+    pnpm install
+    ```
+  </Step>
+
+</Steps>
+
+# Start Erxes
+
+<Steps>
+  <Step title="Run the frontend">
+    ### Run the frontend
+    ```bash
+    pnpm dev:uis
+    ```
+  </Step>
+
+  <Step title="Run the backend">
+    ### Run the backend
+    ```bash
+    pnpm dev:apis
+    ```
+  </Step>
+</Steps>
+
+# Access Erxes Services
+
+Once you've started both the frontend and backend services, you can access them at the following URLs:
+
+### Frontend 
+Erxes frontend is available at [http://localhost:3001](http://localhost:3001)
+
+### Backend Services
+* Erxes gateway is available at [http://localhost:4000](http://localhost:4000)
+* Erxes graphql federation server is available at [http://localhost:4000/graphql](http://localhost:4000/graphql)
+* Erxes core service is available at [http://localhost:3300](http://localhost:3300)
+
+
+
+
+
+
+

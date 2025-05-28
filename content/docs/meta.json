@@ -1,0 +1,13 @@
+{
+  "title": "docs",
+  "pages": [
+    "---Getting Started---",
+    "local-setup",
+    "self-hosting",
+    "---Contributing---",
+    "contributing",
+
+    "---Plugin development---",
+    "create-plugin"
+  ]
+}

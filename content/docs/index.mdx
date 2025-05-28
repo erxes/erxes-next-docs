@@ -1,13 +1,37 @@
 ---
-title: Hello World
-description: Your first document
+title: " "
 ---
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+import { ServerIcon, TerminalIcon } from "lucide-react";
 
-## What is Next?
+## Getting started
 
 <Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.vercel.app" />
+  <Card
+    icon={<TerminalIcon />}
+    title="Local Setup"
+    description="Learn how to set up Erxes on your local machine with Docker, including prerequisites like Node.js, MongoDB, Redis, and more."
+    href="/getting-started/local-setup"
+  />
+  <Card
+    icon={<ServerIcon />}
+    title="Self-Hosting"
+    description="Learn how to deploy Erxes on your own server with detailed instructions for Ubuntu/CentOS, including server requirements and configuration."
+    href="/getting-started/self-hosting"
+  />
+</Cards>
+
+## Guides
+
+<Cards>
+  <Card
+    title="Local Setup"
+    description="Step-by-step guide for setting up Erxes locally with Docker, including database configuration and service management."
+    href="/getting-started/local-setup"
+  />
+  <Card
+    title="Self-Hosting"
+    description="Comprehensive guide for deploying Erxes on your own server, including server requirements, installation scripts, and production configuration."
+    href="/getting-started/self-hosting"
+  />
 </Cards>
