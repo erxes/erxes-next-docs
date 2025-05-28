@@ -4,8 +4,10 @@
     "---Getting Started---",
     "local-setup",
     "self-hosting",
+
     "---Contributing---",
-    "contributing",
+    "contribute",
+    
 
     "---Plugin development---",
     "create-plugin"
