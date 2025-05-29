@@ -4,14 +4,369 @@ description: Learn how to deploy Erxes on your own server with detailed instruct
 ---
 
 import DockerGenerator from "../../components/docker-generator";
+import DockerDBGenerator from "../../components/docker-db-generator";
 
-Welcome to the docs! You can start writing documents in `/content/docs`.
+# System Requirements
 
-<DockerGenerator />
+* RAM: Ensure your environment has at least 2GB of RAM. Insufficient memory can cause processes to crash.
+* Disk Space: Ensure you have at least 10GB of free disk space.
+* Operating System: [Ubuntu](https://ubuntu.com/download/server) or [CentOS](https://www.centos.org/centos-stream/)
 
-## What is Next?
+# Prerequisites
 
-<Cards>
-  <Card title="Learn more about Next.js" href="https://nextjs.org/docs" />
-  <Card title="Learn more about Fumadocs" href="https://fumadocs.vercel.app" />
-</Cards>
+* [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
+* [Nginx](https://nginx.org/en/download.html)
+
+# Steps
+
+<Steps>
+ <Step title="Create an erxes user on the instance">
+   ### Create an erxes user on the instance
+    Assuming you have connected to your instance and ready to execute following steps. First you need to `create erxes user` because all erxes related installation scripts are made for erxes user.
+    Why?
+    You don't want to use **root** user to administer your server. So everything will be done by a user called, `erxes`. To accomplish this, run the following command:
+
+    ```bash
+    sudo adduser erxes
+    ```
+
+    When prompted, enter unique & strong password. (Finish adding the user simply by pressing the enter or return key through the questions)
+
+    Grant sudo and docker rights to erxes user by following command:
+
+    ```bash
+    sudo usermod -aG sudo erxes
+    ```
+    ```bash
+    sudo usermod -aG docker erxes
+    ```
+
+    ```bash
+    sudo su - erxes
+    ```
+
+    ```bash
+    exit
+    ```
+ </Step>
+  
+ <Step title="Create a directory for erxes">
+  ### Create a directory for erxes
+  ```bash
+  mkdir erxes
+  ```
+ </Step>
+
+ <Step title="Place the yourself in erxes directory">
+  ### Place the yourself in erxes directory
+  ```bash
+  cd /erxes
+  ```
+ </Step>
+
+ <Step title="Initiate docker swarm mode">
+  ### Initiate docker swarm mode
+  Now you need to initiate docker swarm mode in order to do that use following command.
+  <Steps>
+    <Step title="Initiate docker swarm mode">
+      ### Initiate docker swarm mode
+      ```bash
+      docker swarm init
+      ```
+     <Callout title="Note" type="info">
+      If you get a permission denied warning when you run this command, you haven't run the usermod -aG docker erxes command.
+     </Callout>
+
+      ```bash
+      docker network create --driver=overlay --attachable erxes
+      ```
+
+      <Callout title="Note" type="info">
+      In erxes directory we have docker-compose.yml file even with that we do not use docker-compose up, docker-compose down, docker-compose restart commands further
+     </Callout>
+    </Step>
+  </Steps>
+ </Step>
+
+ <Step title="Setup and start the databases">
+  ### Setup and start the databases
+  <Steps>
+    <Step title="Setup mongo key and certificate for replica set">
+      ```bash
+      openssl rand -base64 756 > mongo-key
+      sudo chmod 400 mongo-key && sudo chown 999:999 mongo-key
+      openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem --batch
+      cat key.pem certificate.pem > mongo.pem
+      ```
+    </Step>
+    <Step title="Setup and start the databases">
+      ### Generate docker-compose-dbs.yml file
+      <DockerDBGenerator />
+    </Step>
+    <Step title="Generate docker-compose-dbs.yml file">
+      ### Copy the generated docker-compose-dbs.yml file to the erxes directory
+  
+    </Step>
+    <Step title="Start the databases">
+      ```bash
+     docker stack deploy --compose-file docker-compose-dbs.yml erxes-dbs --with-registry-auth --resolve-image changed
+      ```
+    </Step>
+
+    <Step title="Check the status of the databases">
+      ### Check the status of the databases
+      To check database services up use following command it will shows you all the running docker services id, name and state etc.
+
+      ```bash
+      docker ps -a | grep mongo
+      ```
+    </Step>
+
+    <Step title="Make mongo have a replica set">
+      ### Make mongo have a replica set
+       Now we need to make our mongo have a replica set. First we need to enter the mongo container then enter the mongo instance then execute the 3 following commands.
+
+      ```bash
+      docker exec -it erxes-dbs-mongo-1 bash
+      mongo -u erxes -p <auto generated in configs.json>
+      rs.initiate();  
+      ```
+
+      <Callout title="Note" type="info">
+      You may want to hit return or enter button a few times, if we have done it correctly mongo shell will changes into "RS0: primary"
+     </Callout>
+     To quit mongo instance and container run exit command twice.
+
+
+    </Step>
+  </Steps>
+  <Step title="Generate docker-compose.yml file">
+    ### Generate docker-compose.yml file
+    Now we need to generate docker-compose.yml file.
+    <DockerGenerator />
+  </Step>
+  <Step title="Setup and start the databases">
+    ### Copy the generated docker-compose.yml file to the erxes directory
+    <Callout title="Note" type="info">
+      If you are using plugin and you need to add environment variables to the docker-compose.yml file, you can add them in the docker-compose.yml file.
+    </Callout>
+  </Step>
+
+  <Step title="Start the erxes">
+    ### Start the erxes
+    ```bash
+    docker stack deploy --compose-file docker-compose.yml erxes --with-registry-auth --resolve-image changed
+    ```
+  </Step>
+  <Step title="Check the status of the erxes">
+    ### Check the status of the erxes
+  </Step>
+ </Step>
+ <Step title="Check the status of the erxes">
+  ### Check the status of the erxes
+  To check erxes services up use following command it will shows you all the running docker services id, name and state etc.
+
+  ```bash
+  docker ps -a | grep erxes
+  ```
+ </Step>
+
+ <Step title="Configure the nginx">
+  ### Configure the nginx
+  Now we need to configure the erxes.
+  <Steps>
+    <Step title="Create a new nginx configuration file">
+      ### Create a new nginx configuration file
+
+
+      ```bash
+      sudo nano /etc/nginx/sites-enabled/erxes.conf
+      ```
+
+    </Step>
+    <Step title="Copy the nginx configuration file below">
+      ### Copy the nginx configuration file below
+
+      <Callout title="Note" type="info">
+        Replace example.com with your domain name.
+      </Callout>
+
+      ```bash
+      server {
+        server_name example.com;
+        index index.html;
+        client_max_body_size 50M;
+        client_header_buffer_size 32k;
+
+        location / {
+                access_log /var/log/nginx/erxes-front.access.log;
+                error_log /var/log/nginx/erxes-front.error.log;
+                proxy_pass http://127.0.0.1:3000;
+                proxy_http_version 1.1;
+                proxy_redirect off;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header X-Forwarded-Server $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /widgets/ {
+                access_log /var/log/nginx/erxes-widgets.access.log;
+                error_log /var/log/nginx/erxes-widgets.error.log;
+                proxy_pass http://127.0.0.1:3200/;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_http_version 1.1;
+        }
+
+        location /gateway/ {
+                access_log /var/log/nginx/erxes-api.access.log;
+                error_log /var/log/nginx/erxes-api.error.log;
+                proxy_pass http://127.0.0.1:3300/;
+                proxy_http_version 1.1;
+                proxy_buffering off;
+                proxy_redirect off;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-Server $host;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+        }
+    }
+
+      ```
+    </Step>
+
+    <Step title="Test the nginx configuration">
+      ### Test the nginx configuration
+      After that we need to test the nginx config. To do that use following command.
+
+      ```bash
+      sudo nginx -t
+      ```
+    </Step>
+    <Step title="Restart the nginx">
+      ### Restart the nginx
+      If nginx test shows successful message we need to restart Nginx. To do that use the following command.
+
+      ```bash
+      sudo service nginx restart
+
+      ```
+    </Step>
+    <Step title="Setup SSL certificate">
+      ### Setup SSL certificate
+      Erxes only works in secure connection to generate free ssl certificate we use Certbot. To configure that use the following command.
+
+      ```bash 
+      sudo certbot --nginx
+      ```
+    <Callout title="Note" type="info">
+    you have to point your domain's A record to your erxes host machine in order to get certificate without that certbot will not generate certificate order.
+
+    </Callout>
+    </Step>
+
+
+
+  </Steps>
+ </Step>
+   <Step title="Open the browser and enjoy our product">
+      ### Open the browser and enjoy our product
+      After entering this command, provide your email and subscription information, and accept the terms. Following that, you will be prompted about the 'redirect' option. We highly recommend enabling this option for security reasons. Once these steps are completed, open your browser and enjoy our product.
+  </Step>
+</Steps>
+
+
+# Removing erxes
+
+<Steps>
+  <Step title="Check the status of the erxes">
+    ### Check the status of the erxes
+    First, it is unfortunate, but every server needs to be kept tidy. The following commands will help remove the Docker stack and any dangling containers in the swarm.
+
+    ```bash
+    docker stack ls
+    ```
+  </Step>
+  <Step title="Remove the erxes docker stack">
+    ### Remove the erxes docker stack
+    To remove the erxes docker stack, use the following command.
+
+    ```bash
+    docker stack rm erxes
+    docker stack rm erxes-dbs
+
+    ```
+  </Step>
+  <Step title="To remove all dangling containers use the following commands.">
+    ### To remove all dangling containers use the following commands.
+    List and remove all dangling images.
+
+    ```bash
+    docker images -f dangling=true
+    docker rmi $(docker images -q -f dangling=true)
+
+    ```
+
+    List and remove all dangling containers.
+
+    ```bash
+    docker ps -a -f status=exited
+    docker rm $(docker ps -a -q -f status=exited) 
+    ```
+
+    List and remove all dangling volumes
+    
+    ```bash
+    docker volume ls -f dangling=true
+    docker volume rm $(docker volume ls -q -f dangling=true)
+
+    ```
+
+    List and remove all dangling networks
+
+    ```bash
+    docker network ls -f dangling=true
+    docker network rm $(docker network ls -q -f dangling=true)
+
+    ```
+  </Step>
+</Steps>
+{/* <Steps>
+  <Step title="Install Docker">
+    <p>
+      Install Docker on your server. You can find the installation guide <a href="https://docs.docker.com/get-docker/" target="_blank">here</a>.
+    </p>
+  </Step>
+  <Step title="Install Docker Compose"> 
+    <p>
+      Install Docker Compose on your server. You can find the installation guide <a href="https://docs.docker.com/compose/install/" target="_blank">here</a>.
+    </p>
+  </Step>
+  <Step title="Create a new directory for your project">
+    <p>
+      Create a new directory for your project.
+    </p>
+  </Step>
+  <Step title="Generate Docker Compose">
+    <p>
+      Generate Docker Compose for your project.
+    </p>
+  </Step>
+  <Step title="Run Docker Compose">
+    <p>
+       Run Docker Compose to start your project.
+    </p>
+  </Step>
+</Steps> */}
+

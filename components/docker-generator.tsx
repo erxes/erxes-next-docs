@@ -201,11 +201,7 @@ services:
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Docker Compose Generator</h1>
       <Card>
-        <CardHeader>
-          <CardTitle>Configuration</CardTitle>
-        </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -253,7 +249,7 @@ services:
               <Label>Plugins</Label>
               <div className="grid grid-cols-2 gap-4">
                 {AVAILABLE_PLUGINS.map((plugin) => (
-                  <div key={plugin.id} className="flex items-center space-x-2">
+                  <div key={plugin.id} className="flex items-center space-x-2 w-full">
                     <Checkbox
                       id={plugin.id}
                       checked={config.plugins[plugin.id as keyof typeof config.plugins]}
