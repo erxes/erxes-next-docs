@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface DockerConfig {
   domain: string;
@@ -13,7 +14,18 @@ interface DockerConfig {
   redisPassword: string;
   jwtSecret: string;
   replicas: number;
+  plugins: {
+    accounting: boolean;
+    frontline: boolean;
+    // Add more plugins here as needed
+  };
 }
+
+const AVAILABLE_PLUGINS = [
+  { id: 'accounting', name: 'Accounting', image: 'erxes/erxes-next-accounting_api:latest' },
+  { id: 'frontline', name: 'Frontline', image: 'erxes/erxes-next-frontline_api:latest' },
+  // Add more plugins here as needed
+];
 
 export default function DockerGenerator() {
   const [config, setConfig] = useState<DockerConfig>({
@@ -21,13 +33,79 @@ export default function DockerGenerator() {
     mongoUrl: 'mongodb://yourusername:yourpassword@yourmongodbhost:yourmongodbport/yourdatabase',
     redisPassword: 'yourredispassword',
     jwtSecret: 'yourjwtsecret',
-    replicas: 1
+    replicas: 1,
+    plugins: {
+      accounting: false,
+      frontline: false,
+    }
   });
 
   const [generatedYaml, setGeneratedYaml] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedYaml);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const handleInputChange = (field: keyof DockerConfig) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setConfig({
+      ...config,
+      [field]: event.target.value
+    });
+  };
+
+  const handlePluginChange = (pluginId: string) => (checked: boolean) => {
+    setConfig({
+      ...config,
+      plugins: {
+        ...config.plugins,
+        [pluginId]: checked
+      }
+    });
+  };
+
+  const generatePluginServices = () => {
+    const enabledPlugins = AVAILABLE_PLUGINS.filter(plugin => config.plugins[plugin.id as keyof typeof config.plugins]);
+    
+    return enabledPlugins.map(plugin => `
+  plugin-${plugin.id}-api:
+    image: ${plugin.image}
+    environment:
+      OTEL_SERVICE_NAME: ${plugin.id}
+      SERVICE_NAME: ${plugin.id}
+      PORT: 80
+      JWT_TOKEN_SECRET: ${config.jwtSecret}
+      LOAD_BALANCER_ADDRESS: http://plugin-${plugin.id}-api
+      MONGO_URL: ${config.mongoUrl}
+      NODE_INSPECTOR: null
+      ELASTIC_APM_HOST_NAME: null
+      DEBUG: '*error*'
+      NODE_ENV: production
+      DOMAIN: https://${config.domain}
+      REDIS_HOST: erxes-dbs_redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${config.redisPassword}
+      VERSION: os
+    extra_hosts: *a2
+    networks:
+      - erxes
+    deploy: *a1`).join('\n');
+  };
+
   const generateDockerCompose = () => {
+    const enabledPlugins = Object.entries(config.plugins)
+      .filter(([_, enabled]) => enabled)
+      .map(([id]) => id)
+      .join(',');
+
     const dockerCompose = `version: '3.7'
 networks:
   erxes:
@@ -75,63 +153,14 @@ services:
       REDIS_HOST: erxes-dbs_redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${config.redisPassword}
-      ELASTICSEARCH_URL: http://erxes-dbs_elasticsearch:9200
       RELEASE: master
       VERSION: os
-      MESSAGE_BROKER_PREFIX: ''
     extra_hosts: &a2 []
     volumes:
       - ./permissions.json:/erxes/packages/core/permissions.json
-
     networks:
       - erxes
-    deploy: *a1
-  plugin-accounting-api:
-    image: erxes/erxes-next-accounting_api:latest
-    environment:
-      OTEL_SERVICE_NAME: accounting
-      SERVICE_NAME: accounting
-      PORT: 80
-      JWT_TOKEN_SECRET: ${config.jwtSecret}
-      LOAD_BALANCER_ADDRESS: http://plugin-accounting-api
-      MONGO_URL: ${config.mongoUrl}
-      NODE_INSPECTOR: null
-      ELASTIC_APM_HOST_NAME: null
-      DEBUG: '*error*'
-      NODE_ENV: production
-      DOMAIN: https://${config.domain}
-      REDIS_HOST: erxes-dbs_redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${config.redisPassword}
-      VERSION: os
-    extra_hosts: *a2
-    networks:
-      - erxes
-    deploy: *a1
-  plugin-frontline-api:
-    image: erxes/erxes-next-frontline_api:latest
-    environment:
-      OTEL_SERVICE_NAME: frontline
-      SERVICE_NAME: frontline
-      PORT: 80
-      CLIENT_PORTAL_DOMAINS: http://localhost:8080,http://localhost:7002,http://192.168.43.156:7002/
-      JWT_TOKEN_SECRET: ${config.jwtSecret}
-      LOAD_BALANCER_ADDRESS: http://plugin-frontline-api
-      MONGO_URL: ${config.mongoUrl}
-      NODE_INSPECTOR: null
-      ELASTIC_APM_HOST_NAME: null
-      DEBUG: '*error*'
-      NODE_ENV: production
-      DOMAIN: https://${config.domain}
-      WIDGETS_DOMAIN: https://${config.domain}/widgets
-      REDIS_HOST: erxes-dbs_redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${config.redisPassword}
-      VERSION: os
-    extra_hosts: *a2
-    networks:
-      - erxes
-    deploy: *a1
+    deploy: *a1${generatePluginServices()}
   gateway:
     image: erxes/erxes-next-gateway:latest
     environment:
@@ -151,7 +180,7 @@ services:
       REDIS_PASSWORD: ${config.redisPassword}
       VERSION: os
       INTROSPECTION: 'true'
-      ENABLED_PLUGINS: 'frontline,accounting'
+      ${enabledPlugins ? `ENABLED_PLUGINS: '${enabledPlugins}'` : ''}
     healthcheck:
       test:
         - CMD
@@ -168,25 +197,6 @@ services:
     deploy: *a1`;
 
     setGeneratedYaml(dockerCompose);
-  };
-
-  const handleInputChange = (field: keyof DockerConfig) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setConfig({
-      ...config,
-      [field]: event.target.value
-    });
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedYaml);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
   };
 
   return (
@@ -222,7 +232,6 @@ services:
                 onChange={handleInputChange('redisPassword')}
               />
             </div>
-  
             <div className="space-y-2">
               <Label htmlFor="jwtSecret">JWT Secret</Label>
               <Input
@@ -239,6 +248,21 @@ services:
                 value={config.replicas}
                 onChange={handleInputChange('replicas')}
               />
+            </div>
+            <div className="space-y-4">
+              <Label>Plugins</Label>
+              <div className="grid grid-cols-2 gap-4">
+                {AVAILABLE_PLUGINS.map((plugin) => (
+                  <div key={plugin.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={plugin.id}
+                      checked={config.plugins[plugin.id as keyof typeof config.plugins]}
+                      onCheckedChange={handlePluginChange(plugin.id)}
+                    />
+                    <Label htmlFor={plugin.id}>{plugin.name}</Label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>
