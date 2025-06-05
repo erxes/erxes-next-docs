@@ -99,6 +99,19 @@ import DockerDBGenerator from "../../components/docker-db-generator";
       cat key.pem certificate.pem > mongo.pem
       ```
     </Step>
+    
+    <Step title="Create mongodata directory">
+      ```bash
+      mkdir -p mongodata
+      ```
+    </Step>
+
+    <Step title="Create redisdata directory">
+      ```bash
+      mkdir -p redisdata
+      ```
+    </Step>
+
     <Step title="Setup and start the databases">
       ### Generate docker-compose-dbs.yml file
       <DockerDBGenerator />
